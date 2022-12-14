@@ -1,0 +1,17 @@
+import argparse
+from srv6_ping.ping import ping_and_show
+
+
+def get_args(description=None):
+    parser = argparse.ArgumentParser(description=description)
+
+    parser.add_argument('-d', '--destination', help="destination")
+    parser.add_argument('-s', '--segs', default="", help="segment_list. e.g.) fd0a::,fd0b::,fd0c::")
+
+    args = parser.parse_args()
+    return args
+
+
+if __name__ == '__main__':
+    args = get_args()
+    ping_and_show(args.destination, args.segs.split(","))
