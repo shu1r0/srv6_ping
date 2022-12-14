@@ -55,7 +55,8 @@ def ping1(dst: str, segs: List[str] = None, timeout: int = 1) -> Optional[dict]:
 
 def get_icmp_packet(dst: str, segs: List[str] = None):
     if segs and len(segs) > 0:
-        return IPv6(dst=dst)/IPv6ExtHdrSegmentRouting(addresses=segs)/ICMPv6EchoRequest(data="x"*32)
+        segs.insert(0, dst)
+        return IPv6(dst=segs[0])/IPv6ExtHdrSegmentRouting(addresses=segs)/ICMPv6EchoRequest(data="x"*32)
     else:
         return IPv6(dst=dst)/ICMPv6EchoRequest(data="x"*32)
 
