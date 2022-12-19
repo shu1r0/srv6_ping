@@ -10,7 +10,7 @@ def ping_and_show(dst: str, segs: List[str] = None, timeout: int = 3):
         while True:
             result = ping1(dst, segs, timeout)
             if result:
-                print("%s code=%d from=%s hlim=%d rtt=%f" % \
+                print("%s: code=%d from=%s hlim=%d rtt=%f" % \
                       (result["msg"], result["code"], result["rep_src"], result["hlim"], result["rtt"]))
             else:
                 print("Timeout.")
@@ -31,7 +31,7 @@ def ping1(dst: str, segs: List[str] = None, timeout: int = 3, verbose=1) -> Opti
         result["rtt"] = (end - start)*1000
 
         code = -1
-        msg = "UNKOWN MESSAGE"
+        msg = "UNKOWN"
         if ICMPv6EchoReply in rep:
             code = rep[ICMPv6EchoReply].code
             msg = "EchoReply"
