@@ -13,3 +13,5 @@ Ping reaching `fd00:2::1` via `fd00:a::2` and `fd00:d::2`.
 python srv6_ping -d fd00:2::1 -s fd00:a::2,fd00:d::2
 ```
 
+![example](./docs/images/ex.JPG)
+
