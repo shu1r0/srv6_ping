@@ -22,4 +22,4 @@ jobs:
           sudo ./install.sh
       - name: run unit test
         run: |
-          sudo test_srv6_ping.sh
+          sudo ./test_srv6_ping.sh
