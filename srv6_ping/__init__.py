@@ -25,7 +25,7 @@ from scapy.config import conf
 # conf.debug_match = True
 
 
-def get_icmpv6_echorep(pkt):
+def get_icmpv6_echo(pkt):
     if ICMPv6EchoReply in pkt:
         return pkt[ICMPv6EchoReply]
     if ICMPv6EchoRequest in pkt:
@@ -33,8 +33,8 @@ def get_icmpv6_echorep(pkt):
 
 
 def compare_echorep_payload(pkt1, pkt2):
-    icmp1 = get_icmpv6_echorep(pkt1)
-    icmp2 = get_icmpv6_echorep(pkt2)
+    icmp1 = get_icmpv6_echo(pkt1)
+    icmp2 = get_icmpv6_echo(pkt2)
     if icmp1 is not None and icmp2 is not None:
         return icmp1.type != icmp2.type and icmp1.payload == icmp2.payload
     return False

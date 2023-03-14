@@ -1,0 +1,3 @@
+[submodule "netns_network_examples"]
+	path = tests/netns_network_examples
+	url = https://github.com/shu1r0/netns_network_examples.git
