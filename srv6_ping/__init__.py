@@ -18,7 +18,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 import os
 import logging
 
-from scapy.all import ICMPv6EchoRequest, ICMPv6EchoReply
+from scapy.all import IPv6, ICMPv6EchoRequest, ICMPv6EchoReply
 from scapy.sendrecv import AsyncSniffer, SndRcvHandler, debug, QueryAnswer
 from scapy.config import conf
 
@@ -35,11 +35,12 @@ def get_icmpv6_echo(pkt):
         return pkt[ICMPv6EchoRequest]
 
 
-def compare_echorep_payload(pkt1, pkt2):
-    icmp1 = get_icmpv6_echo(pkt1)
-    icmp2 = get_icmpv6_echo(pkt2)
-    if icmp1 is not None and icmp2 is not None:
-        return icmp1.type != icmp2.type and icmp1.payload == icmp2.payload
+def compare_rep_payload(r_pkt, s_pkt):
+    r_icmp = get_icmpv6_echo(r_pkt)
+    s_icmp = get_icmpv6_echo(s_pkt)
+    if r_icmp is not None and s_icmp is not None:
+        if r_pkt[IPv6].dst == s_pkt[IPv6].src:
+            return r_icmp.payload == s_icmp.payload
     return False
 
 
@@ -53,7 +54,7 @@ def _new_process_packet(self, r):
 
     for hlst in self.hsent.values():
         for i, sentpkt in enumerate(hlst):
-            if r.answers(sentpkt) or compare_echorep_payload(r, sentpkt):
+            if r.answers(sentpkt) or compare_rep_payload(r, sentpkt):
                 self.ans.append(QueryAnswer(sentpkt, r))
                 if self.verbose > 1:
                     os.write(1, b"*")

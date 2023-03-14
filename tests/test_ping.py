@@ -26,6 +26,11 @@ class TestSRv6Ping(TestCase):
             if result:
                 results.append(result)
         
+        # echo reply
         self.assertTrue(len(results) > 0)
         if len(results) > 0:
             self.assertEqual("EchoReply", results[0]["msg"])
+            
+        # time exceeded
+        result = ping1(dst="2001:db8:30::2", segs=["2001:db8:10::2", "2001:db8:20::2"], hlim=1)
+        self.assertEqual("TimeExceeded", result["msg"])

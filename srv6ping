@@ -12,6 +12,8 @@ def get_args(description=None):
     parser.add_argument('-s', '--segs', default="", help="segment_list. (e.g. fd0a::,fd0b::,fd0c::)")
     parser.add_argument('-t', '--timeout', default=3, help="timeout")
     parser.add_argument('-j', '--json_format', action='store_true')
+    
+    parser.add_argument('--hlim', default=64, type=int, help="IPv6 hop limit")
 
     args = parser.parse_args()
     return args
@@ -19,4 +21,4 @@ def get_args(description=None):
 
 if __name__ == '__main__':
     args = get_args()
-    ping_and_show(args.destination, args.segs.split(","), timeout=args.timeout, max_count=args.count, json_format=args.json_format)
+    ping_and_show(args.destination, args.segs.split(","), hlim=args.hlim, timeout=args.timeout, max_count=args.count, json_format=args.json_format)
