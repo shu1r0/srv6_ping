@@ -1,6 +1,5 @@
 # SRv6 Ping
 This SRv6Ping send ICMP messages containing the SID lists.
-Currently, `sr1()` of `scapy` is used to send and receive ICMP.
 
 ## Usage
 ```bash
