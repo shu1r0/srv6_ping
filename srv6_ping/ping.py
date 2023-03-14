@@ -6,31 +6,33 @@ from scapy.all import IPv6, ICMPv6EchoRequest, IPv6ExtHdrSegmentRouting, ICMPv6E
 from scapy.layers.inet6 import ICMPv6EchoReply, ICMPv6DestUnreach, ICMPv6PacketTooBig, ICMPv6TimeExceeded, ICMPv6ParamProblem
 
 
-def ping_and_show(dst: str, segs: List[str] = None, timeout=3, json_format=False):
+def ping_and_show(dst: str, segs: List[str] = None, timeout=3, max_count=-1, json_format=False):
     try:
-        while True:
+        count=0
+        while (max_count < 0) or (count < max_count):
             result = ping1(dst, segs, timeout)
             if result:
                 if json_format:
-                    result_format = {"results": result}
+                    result_format = {"result": result}
                     print(json.dumps(result_format))
                 else:
                     print("%s: code=%d from=%s hlim=%d rtt=%f" % \
                           (result["msg"], result["code"], result["rep_src"], result["hlim"], result["rtt"]))
             else:
                 if json_format:
-                    result_format = {"results": "timeout"}
+                    result_format = {"result": "timeout"}
                     print(json.dumps(result_format))
                 else:
                     print("timeout.")
+            count += 1
             time.sleep(1)
     except KeyboardInterrupt:
         if not json_format:
             print("end.")
 
 
-def ping1(dst: str, segs: List[str] = None, timeout=3, verbose=0) -> Optional[dict]:
-    packet = get_icmp_packet(dst, segs)
+def ping1(dst: str, segs: List[str] = None, timeout=3, verbose=0, including_srh=True) -> Optional[dict]:
+    packet = get_icmp_packet(dst, segs, including_srh=including_srh)
     start = time.time()
     rep = sr1(packet, timeout=timeout, verbose=verbose, chainCC=True)
     if rep:
@@ -65,13 +67,13 @@ def ping1(dst: str, segs: List[str] = None, timeout=3, verbose=0) -> Optional[di
         return None
 
 
-def get_icmp_packet(dst: str, segs: List[str] = None, always_srh=True):
+def get_icmp_packet(dst: str, segs: List[str] = None, including_srh=True):
     if segs and len(segs) > 0 and segs[0] != "":
         s = segs[::-1]
         s.insert(0, dst)
         return IPv6(dst=s[-1])/IPv6ExtHdrSegmentRouting(addresses=s)/ICMPv6EchoRequest(data=RandString(32))
     else:
-        if always_srh:
+        if including_srh:
             return IPv6(dst=dst)/IPv6ExtHdrSegmentRouting(addresses=[dst])/ICMPv6EchoRequest(data=RandString(32))
         else:
             return IPv6(dst=dst)/ICMPv6EchoRequest(data=RandString(32))

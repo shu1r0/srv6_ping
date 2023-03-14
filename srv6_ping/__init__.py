@@ -16,11 +16,14 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see http://www.gnu.org/licenses/.
 """
 import os
+import logging
 
 from scapy.all import ICMPv6EchoRequest, ICMPv6EchoReply
 from scapy.sendrecv import AsyncSniffer, SndRcvHandler, debug, QueryAnswer
 from scapy.config import conf
 
+
+logging.getLogger("scapy").setLevel(logging.CRITICAL)
 # conf.use_pcap = True
 # conf.debug_match = True
 
