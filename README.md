@@ -10,9 +10,9 @@ $ which srv6ping
 ## Usage
 ```bash
 $ srv6ping -h
-usage: srv6ping [-h] [-c COUNT] -d DESTINATION [-s SEGS] [-t TIMEOUT] [-j]
+usage: srv6ping [-h] [-c COUNT] -d DESTINATION [-s SEGS] [-t TIMEOUT] [-j] [--hlim HLIM]
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
   -c COUNT, --count COUNT
                         ping count
@@ -22,6 +22,7 @@ options:
   -t TIMEOUT, --timeout TIMEOUT
                         timeout
   -j, --json_format
+  --hlim HLIM           IPv6 hop limit
 ```
 
 ## Examples
