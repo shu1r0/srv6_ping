@@ -2,15 +2,15 @@ import time
 import json
 from typing import List, Optional
 
-from scapy.all import IPv6, ICMPv6EchoRequest, IPv6ExtHdrSegmentRouting, ICMPv6EchoReply, sr1, RandString, debug
+from scapy.all import Packet, IPv6, ICMPv6EchoRequest, IPv6ExtHdrSegmentRouting, IPv6ExtHdrSegmentRoutingTLV, ICMPv6EchoReply, sr1, RandString, debug
 from scapy.layers.inet6 import ICMPv6EchoReply, ICMPv6DestUnreach, ICMPv6PacketTooBig, ICMPv6TimeExceeded, ICMPv6ParamProblem
 
 
-def ping_and_show(dst: str, segs: List[str] = None, hlim=64, timeout=3, max_count=-1, json_format=False):
+def ping_and_show(dst: str, segs: List[str] = None, hlim=64, timeout=3, max_count=-1, srh_tlvs: List[IPv6ExtHdrSegmentRoutingTLV] = None, json_format=False):
     try:
         count=0
         while (max_count < 0) or (count < max_count):
-            result = ping1(dst, segs, hlim=hlim, timeout=timeout)
+            result = ping1(dst, segs, hlim=hlim, timeout=timeout, srh_tlvs=srh_tlvs)
             if result:
                 if json_format:
                     result_format = {"result": result}
@@ -31,8 +31,7 @@ def ping_and_show(dst: str, segs: List[str] = None, hlim=64, timeout=3, max_coun
             print("end.")
 
 
-def ping1(dst: str, segs: List[str] = None, hlim=64, timeout=3, verbose=0, including_srh=True) -> Optional[dict]:
-    packet = get_icmp_packet(dst, segs, hlim=hlim, including_srh=including_srh)
+def _ping1(packet: Packet, timeout: int, verbose: int) -> Optional[dict]:
     start = time.time()
     rep = sr1(packet, timeout=timeout, verbose=verbose, chainCC=True)
     if rep:
@@ -67,7 +66,15 @@ def ping1(dst: str, segs: List[str] = None, hlim=64, timeout=3, verbose=0, inclu
         return None
 
 
-def get_icmp_packet(dst: str, segs: List[str] = None, hlim=64, including_srh=True):
+def ping1(dst: str, segs: List[str] = None, hlim=64, timeout=3, verbose=0, including_srh=True, srh_tlvs: List[IPv6ExtHdrSegmentRoutingTLV] = None) -> Optional[dict]:
+    packet = new_icmp_packet(dst, segs, hlim=hlim, including_srh=including_srh)
+    if srh_tlvs and IPv6ExtHdrSegmentRouting in packet:
+        for tlv in srh_tlvs:
+            packet[IPv6ExtHdrSegmentRouting].tlv_objects.append(tlv)
+    return _ping1(packet, timeout, verbose)
+
+
+def new_icmp_packet(dst: str, segs: List[str] = None, hlim=64, including_srh=True) -> Packet:
     echo_req = ICMPv6EchoRequest(data=RandString(32))
     
     if segs and len(segs) > 0 and segs[0] != "":
@@ -80,3 +87,7 @@ def get_icmp_packet(dst: str, segs: List[str] = None, hlim=64, including_srh=Tru
         else:
             return IPv6(dst=dst, hlim=hlim)/echo_req
 
+
+def new_srh_tlv(type, value) -> IPv6ExtHdrSegmentRoutingTLV:
+    length = len(value)
+    return IPv6ExtHdrSegmentRoutingTLV(type=type, len=length, value=value)

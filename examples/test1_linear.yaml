@@ -1,0 +1,11 @@
+ping:
+  - destination: "2001:db8:10::2"
+  - destination: "2001:db8:30::2"
+    segs: ["2001:db8:10::2","2001:db8:20::2"]
+    timeout: 5
+    count: 3
+    hlim: 64
+    json_format: true
+    srh_tlvs:
+      - type: 124
+        value: "\x00\x01\x00\x00\x00\x01"
