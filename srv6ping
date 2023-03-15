@@ -23,7 +23,8 @@ def get_args(description=None):
 
 
 def run_from_yaml(yaml_file):
-    conf = yaml.safe_load(yaml_file)
+    with open(yaml_file) as f:
+        conf = yaml.safe_load(f)
     ping_conf = conf.get("ping", [])
     for dest in ping_conf:
         srh_tlvs = []
