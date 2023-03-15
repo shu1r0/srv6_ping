@@ -3,7 +3,7 @@ from scapy.all import *
 from json import dumps
 
 
-from srv6_ping.ping import ping1
+from srv6_ping.ping import ping1, new_srh_tlv
 
 
 class TestSRv6Ping(TestCase):
@@ -34,3 +34,8 @@ class TestSRv6Ping(TestCase):
         # time exceeded
         result = ping1(dst="2001:db8:30::2", segs=["2001:db8:10::2", "2001:db8:20::2"], hlim=1)
         self.assertEqual("TimeExceeded", result["msg"])
+
+        # test tlv
+        tlv = new_srh_tlv(type=124, value='\x00\x18\x00\x00\x00\x08')
+        result = ping1(dst="2001:db8:30::2", segs=["2001:db8:10::2", "2001:db8:20::2"], srh_tlvs=[tlv])
+        self.assertEqual("EchoReply", result["msg"])

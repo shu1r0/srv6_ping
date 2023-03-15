@@ -9,8 +9,8 @@ $ which srv6ping
 
 ## Usage
 ```bash
-$ srv6ping -h
-usage: srv6ping [-h] [-c COUNT] -d DESTINATION [-s SEGS] [-t TIMEOUT] [-j] [--hlim HLIM]
+$ srv6ping -h                                                                                                                                                                                                       12:38:25
+usage: srv6ping [-h] [-c COUNT] [-d DESTINATION] [-s SEGS] [-t TIMEOUT] [-j] [-f CONF_FILE] [--hlim HLIM]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -22,6 +22,8 @@ optional arguments:
   -t TIMEOUT, --timeout TIMEOUT
                         timeout
   -j, --json_format
+  -f CONF_FILE, --conf_file CONF_FILE
+                        config file
   --hlim HLIM           IPv6 hop limit
 ```
 
@@ -33,5 +35,14 @@ $ sudo srv6ping -d 2001:db8:30::2 -s 2001:db8:10::2,2001:db8:20::2 -c 3
 EchoReply: code=0 from=2001:db8:30::2 hlim=62 rtt=108.961582
 EchoReply: code=0 from=2001:db8:30::2 hlim=62 rtt=45.726061
 EchoReply: code=0 from=2001:db8:30::2 hlim=62 rtt=58.127642
+```
+
+use config file.
+```bash
+$ sudo srv6ping -f examples/test1_linear.yaml
+EchoReply: code=0 from=2001:db8:10::2 hlim=64 rtt=67.047596
+{"result": {"hlim": 62, "rep_src": "2001:db8:30::2", "rtt": 46.15139961242676, "code": 0, "msg": "EchoReply"}}
+{"result": {"hlim": 62, "rep_src": "2001:db8:30::2", "rtt": 30.368566513061523, "code": 0, "msg": "EchoReply"}}
+{"result": {"hlim": 62, "rep_src": "2001:db8:30::2", "rtt": 30.353546142578125, "code": 0, "msg": "EchoReply"}}
 ```
 
