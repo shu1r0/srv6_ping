@@ -31,7 +31,8 @@ def run_from_yaml(yaml_file):
         for tlv in dest.get("srh_tlvs", []):
             srh_tlvs.append(new_srh_tlv(type=tlv["type"], value=tlv["value"]))
         ping_and_show(dest["destination"], segs=dest.get("segs"), hlim=dest.get("hlim", 64),
-                      timeout=dest.get("timeout", 3), max_count=dest.get("count", 1), json_format=dest.get("json_format", False))
+                      timeout=dest.get("timeout", 3), max_count=dest.get("count", 1),
+                      json_format=dest.get("json_format", False), srh_tlvs=srh_tlvs)
 
 
 if __name__ == '__main__':
