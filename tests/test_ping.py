@@ -11,13 +11,16 @@ class TestSRv6Ping(TestCase):
     def test_ping_destination_srh(self):
         results = []
         for _ in range(3):
-            result = ping1(dst="2001:db8:10::2", including_srh=True)
+            result = ping1(dst="2001:db8:10::2", including_srh=True, return_pkt=True)
             if result:
                 results.append(result)
         
         self.assertTrue(len(results) > 0)
         if len(results) > 0:
-            self.assertEqual("EchoReply", results[0]["msg"])
+            result1 = results[0]
+            self.assertEqual("EchoReply", result1["msg"])
+            # check return_pkt
+            self.assertTrue(result1["sent_pkt"][IPv6].src == result1["recv_pkt"][IPv6].dst)
     
     def test_srv6_ping(self):
         results = []

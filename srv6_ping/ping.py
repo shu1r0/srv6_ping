@@ -11,13 +11,15 @@ def ping_and_show(dst: str, segs: List[str] = None, hlim=64, timeout=3, max_coun
         count=0
         while (max_count < 0) or (count < max_count):
             result = ping1(dst, segs, hlim=hlim, timeout=timeout, srh_tlvs=srh_tlvs)
+            result.pop("sent_pkt", None)
+            result.pop("recv_pkt", None)
             if result:
                 if json_format:
                     result_format = {"result": result}
                     print(json.dumps(result_format))
                 else:
                     print("%s: code=%d from=%s hlim=%d rtt=%f" % \
-                          (result["msg"], result["code"], result["rep_src"], result["hlim"], result["rtt"]))
+                          (result["msg"], result["code"], result["recv_from"], result["hlim"], result["rtt"]))
             else:
                 if json_format:
                     result_format = {"result": "timeout"}
@@ -31,15 +33,19 @@ def ping_and_show(dst: str, segs: List[str] = None, hlim=64, timeout=3, max_coun
             print("end.")
 
 
-def _ping1(packet: Packet, timeout: int, verbose: int) -> Optional[dict]:
+def _ping1(packet: Packet, timeout: int, verbose: int, return_pkt: bool) -> Optional[dict]:
     start = time.time()
     rep = sr1(packet, timeout=timeout, verbose=verbose, chainCC=True)
     if rep:
         end = time.time()
         result = {}
         result["hlim"] = rep[IPv6].hlim
-        result["rep_src"] = rep[IPv6].src
+        result["recv_from"] = rep[IPv6].src
         result["rtt"] = (end - start)*1000
+        
+        if return_pkt:
+            result["sent_pkt"] = packet
+            result["recv_pkt"] = rep
 
         code = -1
         msg = "UNKOWN"
@@ -66,12 +72,12 @@ def _ping1(packet: Packet, timeout: int, verbose: int) -> Optional[dict]:
         return None
 
 
-def ping1(dst: str, segs: List[str] = None, hlim=64, timeout=3, verbose=0, including_srh=True, srh_tlvs: List[IPv6ExtHdrSegmentRoutingTLV] = None) -> Optional[dict]:
+def ping1(dst: str, segs: List[str] = None, hlim=64, timeout=3, verbose=0, including_srh=True, srh_tlvs: List[IPv6ExtHdrSegmentRoutingTLV] = None, return_pkt=False) -> Optional[dict]:
     packet = new_icmp_packet(dst, segs, hlim=hlim, including_srh=including_srh)
     if srh_tlvs and IPv6ExtHdrSegmentRouting in packet:
         for tlv in srh_tlvs:
             packet[IPv6ExtHdrSegmentRouting].tlv_objects.append(tlv)
-    return _ping1(packet, timeout, verbose)
+    return _ping1(packet, timeout, verbose, return_pkt=return_pkt)
 
 
 def new_icmp_packet(dst: str, segs: List[str] = None, hlim=64, including_srh=True) -> Packet:
