@@ -3,7 +3,7 @@
 import argparse
 import yaml
 
-from srv6_ping.ping import ping_and_show, new_srh_tlv, traceroute_and_show
+from srv6_ping.ping import new_srh_tlv, traceroute_and_show
 
 
 def get_args(description=None):
