@@ -16,6 +16,7 @@ traceroute:
     segs: ["2001:db8:10::2","2001:db8:20::2"]
     protocl: tcp
     json_format: true
+    timeout: 1
     srh_tlvs:
       - type: 124
         value: "\x00\x01\x00\x00\x00\x01"
