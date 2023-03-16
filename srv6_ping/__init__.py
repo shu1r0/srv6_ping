@@ -18,7 +18,7 @@ along with this program. If not, see http://www.gnu.org/licenses/.
 import os
 import logging
 
-from scapy.all import IPv6, ICMPv6EchoRequest, ICMPv6EchoReply
+from scapy.all import IPv6, ICMPv6EchoRequest, ICMPv6EchoReply, ICMPv6TimeExceeded, ICMPv6DestUnreach, Raw
 from scapy.sendrecv import AsyncSniffer, SndRcvHandler, debug, QueryAnswer
 from scapy.config import conf
 
@@ -41,6 +41,11 @@ def compare_rep_payload(r_pkt, s_pkt):
     if r_icmp is not None and s_icmp is not None:
         if r_pkt[IPv6].dst == s_pkt[IPv6].src:
             return r_icmp.payload == s_icmp.payload
+    
+    # for Traceroute
+    if ICMPv6TimeExceeded in r_pkt or ICMPv6DestUnreach in r_pkt:
+        if Raw in r_pkt and Raw in s_pkt:
+            return r_pkt[Raw].load == s_pkt[Raw].load[-len(r_pkt[Raw].load):]
     return False
 
 

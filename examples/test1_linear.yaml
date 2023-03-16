@@ -9,3 +9,13 @@ ping:
     srh_tlvs:
       - type: 124
         value: "\x00\x01\x00\x00\x00\x01"
+traceroute:
+  - destination: "2001:db8:10::2"
+    protocol: icmp
+  - destination: "2001:db8:30::2"
+    segs: ["2001:db8:10::2","2001:db8:20::2"]
+    protocl: tcp
+    json_format: true
+    srh_tlvs:
+      - type: 124
+        value: "\x00\x01\x00\x00\x00\x01"

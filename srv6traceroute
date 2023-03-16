@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+
+import argparse
+import yaml
+
+from srv6_ping.ping import ping_and_show, new_srh_tlv, traceroute_and_show
+
+
+def get_args(description=None):
+    parser = argparse.ArgumentParser(description=description)
+
+    parser.add_argument('-c', '--count', type=int, default=30, help="ping count")
+    parser.add_argument('-d', '--destination', help="destination")
+    parser.add_argument('-s', '--segs', default="", help="segment_list. (e.g. fd0a::,fd0b::,fd0c::)")
+    parser.add_argument('-t', '--timeout', default=2, help="timeout")
+    parser.add_argument('-j', '--json_format', action='store_true')
+    parser.add_argument('-f', '--conf_file', help="config file")
+    parser.add_argument('-p', '--protocol', default="udp", choices=["icmp", "udp"], help="probe packet protocol")
+
+    args = parser.parse_args()
+    return args
+
+
+def run_from_yaml(yaml_file):
+    with open(yaml_file) as f:
+        conf = yaml.safe_load(f)
+    ping_conf = conf.get("traceroute", [])
+    for dest in ping_conf:
+        srh_tlvs = []
+        for tlv in dest.get("srh_tlvs", []):
+            srh_tlvs.append(new_srh_tlv(type=tlv["type"], value=tlv["value"]))
+        traceroute_and_show(dest["destination"], segs=dest.get("segs"), timeout=dest.get("timeout", 3), max_count=dest.get("count", 30),
+                      json_format=dest.get("json_format", False), protocol=dest.get("protocol", "udp"), srh_tlvs=srh_tlvs)
+
+
+if __name__ == '__main__':
+    args = get_args()
+    if args.conf_file:
+        run_from_yaml(args.conf_file)
+    else:
+        traceroute_and_show(args.destination, args.segs.split(","), timeout=args.timeout, max_count=args.count, json_format=args.json_format, protocol=args.protocol)
