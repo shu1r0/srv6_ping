@@ -2,15 +2,15 @@ import time
 import json
 from typing import List, Optional
 
-from scapy.all import Packet, IPv6, ICMPv6EchoRequest, IPv6ExtHdrSegmentRouting, IPv6ExtHdrSegmentRoutingTLV, ICMPv6EchoReply, UDP, Raw, sr1, RandString, RandNum, debug
+from scapy.all import Packet, IPv6, ICMPv6EchoRequest, IPv6ExtHdrSegmentRouting, IPv6ExtHdrSegmentRoutingTLV, IPv6ExtHdrHopByHop, IPv6ExtHdrDestOpt, ICMPv6EchoReply, UDP, Raw, sr1, RandString, RandNum, debug
 from scapy.layers.inet6 import ICMPv6EchoReply, ICMPv6DestUnreach, ICMPv6PacketTooBig, ICMPv6TimeExceeded, ICMPv6ParamProblem
 
 
-def ping_and_show(dst: str, segs: List[str] = None, hlim=64, timeout=3, max_count=-1, srh_tlvs: List[IPv6ExtHdrSegmentRoutingTLV] = None, json_format=False):
+def ping_and_show(dst: str, segs: List[str] = None, hlim=64, timeout=3, max_count=-1, srh_tlvs: List[IPv6ExtHdrSegmentRoutingTLV] = None, json_format=False, other_exthdrs=None):
     try:
         count=0
         while (max_count < 0) or (count < max_count):
-            result = ping1(dst, segs, hlim=hlim, timeout=timeout, srh_tlvs=srh_tlvs, return_pkt=False)
+            result = ping1(dst, segs, hlim=hlim, timeout=timeout, srh_tlvs=srh_tlvs, return_pkt=False, other_exthdrs=other_exthdrs)
             if result:
                 if json_format:
                     result_format = {"result": result}
@@ -106,15 +106,15 @@ def _ping1(packet: Packet, timeout: int, verbose: int, return_pkt: bool) -> Opti
         return None
 
 
-def ping1(dst: str, segs: List[str] = None, hlim=64, timeout=3, verbose=0, including_srh=True, srh_tlvs: List[IPv6ExtHdrSegmentRoutingTLV] = None, return_pkt=False) -> Optional[dict]:
-    packet = new_probe_packet(dst, segs, hlim=hlim, including_srh=including_srh)
+def ping1(dst: str, segs: List[str] = None, hlim=64, timeout=3, verbose=0, including_srh=True, srh_tlvs: List[IPv6ExtHdrSegmentRoutingTLV] = None, return_pkt=False, other_exthdrs=None) -> Optional[dict]:
+    packet = new_probe_packet(dst, segs, hlim=hlim, including_srh=including_srh, protocol="icmp", other_exthdrs=other_exthdrs)
     if srh_tlvs and IPv6ExtHdrSegmentRouting in packet:
         for tlv in srh_tlvs:
             packet[IPv6ExtHdrSegmentRouting].tlv_objects.append(tlv)
     return _ping1(packet, timeout, verbose, return_pkt=return_pkt)
 
 
-def new_probe_packet(dst: str, segs: List[str] = None, hlim=64, including_srh=True, protocol="icmp") -> Packet:
+def new_probe_packet(dst: str, segs: List[str] = None, hlim=64, including_srh=True, protocol="icmp", other_exthdrs=None) -> Packet:
     payload = None
     if protocol == "icmp":
         payload = ICMPv6EchoRequest(data=RandString(32))
@@ -123,13 +123,17 @@ def new_probe_packet(dst: str, segs: List[str] = None, hlim=64, including_srh=Tr
     else:
         raise ValueError()
     
+    other_exthdrs = other_exthdrs if other_exthdrs is not None else []
+    
     if segs and len(segs) > 0 and segs[0] != "":
         s = segs[::-1]
         s.insert(0, dst)
-        return IPv6(dst=s[-1], hlim=hlim)/IPv6ExtHdrSegmentRouting(addresses=s)/payload
+        exthdrs = set_exthdrs_before_srh_based_rfc8200(hdrs=other_exthdrs, srh=IPv6ExtHdrSegmentRouting(addresses=s))
+        return IPv6(dst=s[-1], hlim=hlim)/exthdrs/payload
     else:
         if including_srh:
-            return IPv6(dst=dst, hlim=hlim)/IPv6ExtHdrSegmentRouting(addresses=[dst])/payload
+            exthdrs = set_exthdrs_before_srh_based_rfc8200(hdrs=other_exthdrs, srh=IPv6ExtHdrSegmentRouting(addresses=[dst]))
+            return IPv6(dst=dst, hlim=hlim)/exthdrs/payload
         else:
             return IPv6(dst=dst, hlim=hlim)/payload
 
@@ -137,3 +141,18 @@ def new_probe_packet(dst: str, segs: List[str] = None, hlim=64, including_srh=Tr
 def new_srh_tlv(type, value) -> IPv6ExtHdrSegmentRoutingTLV:
     length = len(value)
     return IPv6ExtHdrSegmentRoutingTLV(type=type, len=length, value=value)
+
+
+def set_exthdrs_before_srh_based_rfc8200(hdrs: List, srh: IPv6ExtHdrSegmentRouting) -> Packet:
+    hdrs_pkt = None
+    for i, c in enumerate([h.__class__ for h in hdrs]):
+        if c == IPv6ExtHdrHopByHop:
+            hdrs_pkt = hdrs.pop(i)
+    for i, c in enumerate([h.__class__ for h in hdrs]):
+        if c == IPv6ExtHdrDestOpt:
+            hdrs_pkt = hdrs.pop(i) if hdrs_pkt is None else hdrs_pkt / hdrs.pop(i)
+
+    hdrs_pkt = srh if hdrs_pkt is None else hdrs_pkt / srh
+    for h in hdrs:
+        hdrs_pkt /= h
+    return hdrs_pkt

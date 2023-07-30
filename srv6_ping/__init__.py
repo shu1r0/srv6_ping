@@ -23,9 +23,9 @@ from scapy.sendrecv import AsyncSniffer, SndRcvHandler, debug, QueryAnswer
 from scapy.config import conf
 
 
-logging.getLogger("scapy").setLevel(logging.CRITICAL)
+logging.getLogger("scapy").setLevel(logging.DEBUG)
 # conf.use_pcap = True
-# conf.debug_match = True
+conf.debug_match = True
 
 
 def get_icmpv6_echo(pkt):
@@ -54,11 +54,14 @@ def _new_process_packet(self, r):
     # For licensing information pertaining to this method, see the comments at the top of this file.
     """
     if r is None:
+        print(r)
         return
     ok = False
 
     for hlst in self.hsent.values():
         for i, sentpkt in enumerate(hlst):
+            # print("req %s" % sentpkt)
+            # print("rep %s" % r)
             if r.answers(sentpkt) or compare_rep_payload(r, sentpkt):
                 self.ans.append(QueryAnswer(sentpkt, r))
                 if self.verbose > 1:
