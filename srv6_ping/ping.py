@@ -6,11 +6,11 @@ from scapy.all import Packet, IPv6, ICMPv6EchoRequest, IPv6ExtHdrSegmentRouting,
 from scapy.layers.inet6 import ICMPv6EchoReply, ICMPv6DestUnreach, ICMPv6PacketTooBig, ICMPv6TimeExceeded, ICMPv6ParamProblem
 
 
-def ping_and_show(dst: str, segs: List[str] = None, hlim=64, timeout=3, max_count=-1, srh_tlvs: List[IPv6ExtHdrSegmentRoutingTLV] = None, json_format=False):
+def ping_and_show(dst: str, segs: List[str] = None, hlim=64, timeout=3, max_count=-1,  srh_tlvs: List[IPv6ExtHdrSegmentRoutingTLV] = None, data_len=32, json_format=False):
     try:
         count=0
         while (max_count < 0) or (count < max_count):
-            result = ping1(dst, segs, hlim=hlim, timeout=timeout, srh_tlvs=srh_tlvs, return_pkt=False)
+            result = ping1(dst, segs, hlim=hlim, timeout=timeout, srh_tlvs=srh_tlvs, return_pkt=False, data_len=data_len)
             if result:
                 if json_format:
                     result_format = {"result": result}
@@ -106,20 +106,20 @@ def _ping1(packet: Packet, timeout: int, verbose: int, return_pkt: bool) -> Opti
         return None
 
 
-def ping1(dst: str, segs: List[str] = None, hlim=64, timeout=3, verbose=0, including_srh=True, srh_tlvs: List[IPv6ExtHdrSegmentRoutingTLV] = None, return_pkt=False) -> Optional[dict]:
-    packet = new_probe_packet(dst, segs, hlim=hlim, including_srh=including_srh)
+def ping1(dst: str, segs: List[str] = None, hlim=64, timeout=3, verbose=0, including_srh=True, srh_tlvs: List[IPv6ExtHdrSegmentRoutingTLV] = None, return_pkt=False, data_len=32) -> Optional[dict]:
+    packet = new_probe_packet(dst, segs, hlim=hlim, including_srh=including_srh, data_len=data_len)
     if srh_tlvs and IPv6ExtHdrSegmentRouting in packet:
         for tlv in srh_tlvs:
             packet[IPv6ExtHdrSegmentRouting].tlv_objects.append(tlv)
     return _ping1(packet, timeout, verbose, return_pkt=return_pkt)
 
 
-def new_probe_packet(dst: str, segs: List[str] = None, hlim=64, including_srh=True, protocol="icmp") -> Packet:
+def new_probe_packet(dst: str, segs: List[str] = None, hlim=64, including_srh=True, protocol="icmp", data_len=32) -> Packet:
     payload = None
     if protocol == "icmp":
-        payload = ICMPv6EchoRequest(data=RandString(32))
+        payload = ICMPv6EchoRequest(data=RandString(data_len))
     elif protocol == "udp":
-        payload = UDP(dport=int(RandNum(33434, 33534)))/Raw(load=RandString(32))
+        payload = UDP(dport=int(RandNum(33434, 33534)))/Raw(load=RandString(data_len))
     else:
         raise ValueError()
     
