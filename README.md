@@ -9,22 +9,28 @@ $ which srv6ping
 
 ## Usage
 ```bash
-$ srv6ping -h                                                                                                                                                                                                       12:38:25
-usage: srv6ping [-h] [-c COUNT] [-d DESTINATION] [-s SEGS] [-t TIMEOUT] [-j] [-f CONF_FILE] [--hlim HLIM]
+$  srv6ping -h
+usage: srv6ping [-h] [-c COUNT] [-d DST] [--src SRC] [-s SEGS] [-t TIMEOUT] [-j] [-f CONF_FILE] [--oam OAM] [--hlim HLIM] [--including_srh INCLUDING_SRH] [--iface IFACE] [-v]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -c COUNT, --count COUNT
                         ping count
-  -d DESTINATION, --destination DESTINATION
-                        destination
+  -d DST, --dst DST     destination ipv6 address
+  --src SRC             source ipv6 address
   -s SEGS, --segs SEGS  segment_list. (e.g. fd0a::,fd0b::,fd0c::)
   -t TIMEOUT, --timeout TIMEOUT
                         timeout
   -j, --json_format
   -f CONF_FILE, --conf_file CONF_FILE
                         config file
+  --oam OAM             srh oam flag
   --hlim HLIM           IPv6 hop limit
+  --including_srh INCLUDING_SRH
+                        always including_srh
+  --iface IFACE         out interface
+  -v, --verbose
+
 ```
 
 ## Examples
@@ -53,7 +59,7 @@ EchoReply: code=0 from=2001:db8:10::2 hlim=64 rtt=67.047596
 
 ```bash
 $ srv6traceroute -h
-usage: srv6traceroute [-h] [-c COUNT] [-d DESTINATION] [-s SEGS] [-t TIMEOUT] [-j] [-f CONF_FILE] [-p {icmp,udp}]
+usage: srv6traceroute [-h] [-c COUNT] [-d DESTINATION] [-s SEGS] [-t TIMEOUT] [-j] [-f CONF_FILE] [-p {icmp,udp}] [-v]
 
 options:
   -h, --help            show this help message and exit
@@ -69,4 +75,5 @@ options:
                         config file
   -p {icmp,udp}, --protocol {icmp,udp}
                         probe packet protocol
+  -v, --verbose
 ```

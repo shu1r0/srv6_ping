@@ -26,6 +26,9 @@ from scapy.config import conf
 logging.getLogger("scapy").setLevel(logging.CRITICAL)
 # conf.use_pcap = True
 # conf.debug_match = True
+# conf.L3socket=L3RawSocket
+
+verbose = False
 
 
 def get_icmpv6_echo(pkt):
@@ -38,7 +41,11 @@ def get_icmpv6_echo(pkt):
 def compare_rep_payload(r_pkt, s_pkt):
     r_icmp = get_icmpv6_echo(r_pkt)
     s_icmp = get_icmpv6_echo(s_pkt)
+
     if r_icmp is not None and s_icmp is not None:
+        # check id
+        if r_icmp.id != s_icmp.id:
+            return False
         if r_pkt[IPv6].dst == s_pkt[IPv6].src:
             return r_icmp.payload == s_icmp.payload
     
@@ -59,6 +66,8 @@ def _new_process_packet(self, r):
 
     for hlst in self.hsent.values():
         for i, sentpkt in enumerate(hlst):
+            if verbose:
+                print("Received pkt: " + r.__repr__())
             if r.answers(sentpkt) or compare_rep_payload(r, sentpkt):
                 self.ans.append(QueryAnswer(sentpkt, r))
                 if self.verbose > 1:

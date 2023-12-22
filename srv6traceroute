@@ -3,6 +3,7 @@
 import argparse
 import yaml
 
+import srv6_ping
 from srv6_ping.ping import new_srh_tlv, traceroute_and_show
 
 
@@ -16,6 +17,8 @@ def get_args(description=None):
     parser.add_argument('-j', '--json_format', action='store_true')
     parser.add_argument('-f', '--conf_file', help="config file")
     parser.add_argument('-p', '--protocol', default="udp", choices=["icmp", "udp"], help="probe packet protocol")
+
+    parser.add_argument('-v', '--verbose', action='store_true')
 
     args = parser.parse_args()
     return args
@@ -35,6 +38,7 @@ def run_from_yaml(yaml_file):
 
 if __name__ == '__main__':
     args = get_args()
+    srv6_ping.verbose = args.verbose
     if args.conf_file:
         run_from_yaml(args.conf_file)
     else:
