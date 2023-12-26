@@ -21,10 +21,7 @@ def add_target_routes6(dst: str, src="::"):
             nh = parse_addr6(nh)
             if d != "::" and in6_isincluded(dst, d, prefix):
                 if (d, prefix) not in [(r[0], r[1]) for r in conf.route6.routes]:
-                    r = list(conf.route6.make_route(dst="%s/%d" % (d, prefix), gw=nh, dev=dev))
-                    r[4].append(src)  # Todo: lookup source address
-                    r[5] = metric
-                    conf.route6.routes.append(tuple(r))
+                    conf.route6.routes.append((d, prefix, nh, dev, [src], metric))
                     if nh != "::":
-                        neighsol_and_chache(nh, r[2], dev)
+                        neighsol_and_chache(nh, dev)
             line = f.readline()

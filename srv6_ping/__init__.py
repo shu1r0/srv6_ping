@@ -24,7 +24,6 @@ from scapy.config import conf
 
 
 logging.getLogger("scapy").setLevel(logging.ERROR)
-# conf.use_pcap = True
 # conf.debug_match = True
 # conf.L3socket=L3RawSocket
 # conf.use_pcap = True

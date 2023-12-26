@@ -18,7 +18,7 @@ def ping_and_show(timeout=3, max_count=-1, iface=None, json_format=False, pkt_pa
     verbose = 1 if srv6_ping.verbose else 0
     try:
         # lookup and add destination route
-        add_target_routes6(pkt_params["dst"])
+        add_target_routes6(pkt_params["dst"], pkt_params.get("src", "::"))
         count = 1
         while (max_count < 0) or (count <= max_count):
             pkt_params["icmp_seq"] = count
