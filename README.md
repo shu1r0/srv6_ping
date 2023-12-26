@@ -15,22 +15,21 @@ usage: srv6ping [-h] [-c COUNT] [-d DST] [--src SRC] [-s SEGS] [-t TIMEOUT] [-j]
 options:
   -h, --help            show this help message and exit
   -c COUNT, --count COUNT
-                        ping count
+                        stop count
   -d DST, --dst DST     destination ipv6 address
-  --src SRC             source ipv6 address
-  -s SEGS, --segs SEGS  segment_list. (e.g. fd0a::,fd0b::,fd0c::)
+  --src SRC             source ipv6 address. By default, this is the address of the out interface. If the address is not explicitly set, the src must be specified.
+  -s SEGS, --segs SEGS  segment list. (e.g. fd0a::,fd0b::,fd0c::)
   -t TIMEOUT, --timeout TIMEOUT
                         timeout
-  -j, --json_format
+  -j, --json_format     print json_format
   -f CONF_FILE, --conf_file CONF_FILE
                         config file
-  --oam OAM             srh oam flag
+  --oam OAM             SRH OAM flag
   --hlim HLIM           IPv6 hop limit
   --including_srh INCLUDING_SRH
-                        always including_srh
+                        always include SRH in packets
   --iface IFACE         out interface
   -v, --verbose
-
 ```
 
 ## Examples
@@ -59,20 +58,25 @@ EchoReply: code=0 from=2001:db8:10::2 hlim=64 rtt=67.047596
 
 ```bash
 $ srv6traceroute -h
-usage: srv6traceroute [-h] [-c COUNT] [-d DESTINATION] [-s SEGS] [-t TIMEOUT] [-j] [-f CONF_FILE] [-p {icmp,udp}] [-v]
+usage: srv6traceroute [-h] [-c COUNT] [-d DST] [--src SRC] [-s SEGS] [-t TIMEOUT] [-j] [-f CONF_FILE] [--oam OAM] [--hlim HLIM] [--including_srh INCLUDING_SRH] [--iface IFACE] [-p {icmp,udp}] [-v]
 
 options:
   -h, --help            show this help message and exit
   -c COUNT, --count COUNT
-                        ping count
-  -d DESTINATION, --destination DESTINATION
-                        destination
-  -s SEGS, --segs SEGS  segment_list. (e.g. fd0a::,fd0b::,fd0c::)
+                        stop count
+  -d DST, --dst DST     destination ipv6 address
+  --src SRC             source ipv6 address. By default, this is the address of the out interface. If the address is not explicitly set, the src must be specified.
+  -s SEGS, --segs SEGS  segment list. (e.g. fd0a::,fd0b::,fd0c::)
   -t TIMEOUT, --timeout TIMEOUT
                         timeout
-  -j, --json_format
+  -j, --json_format     print json_format
   -f CONF_FILE, --conf_file CONF_FILE
                         config file
+  --oam OAM             SRH OAM flag
+  --hlim HLIM           IPv6 hop limit
+  --including_srh INCLUDING_SRH
+                        always include SRH in packets
+  --iface IFACE         out interface
   -p {icmp,udp}, --protocol {icmp,udp}
                         probe packet protocol
   -v, --verbose
