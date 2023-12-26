@@ -2,7 +2,8 @@ from unittest import TestCase, main
 from scapy.all import *
 from json import dumps
 
-from srv6_ping.ping import ping1, new_srh_tlv
+from srv6_ping.ping import ping1
+from srv6_ping.utils import new_srh_tlv
 
 
 class TestSRv6Ping(TestCase):

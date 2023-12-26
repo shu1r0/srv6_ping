@@ -2,25 +2,27 @@
 
 import argparse
 import yaml
+import logging
 
 import srv6_ping
-from srv6_ping.ping import ping_and_show, new_srh_tlv
+from srv6_ping.ping import ping_and_show
+from srv6_ping.utils import parse_pktparam_from_conf
 
 
 def get_args(description=None):
     parser = argparse.ArgumentParser(description=description)
 
-    parser.add_argument('-c', '--count', type=int, default=5, help="ping count")
+    parser.add_argument('-c', '--count', type=int, default=5, help="stop count")
     parser.add_argument('-d', '--dst', help="destination ipv6 address")
-    parser.add_argument('--src', help="source ipv6 address")
-    parser.add_argument('-s', '--segs', default="", help="segment_list. (e.g. fd0a::,fd0b::,fd0c::)")
+    parser.add_argument('--src', help="source ipv6 address. By default, this is the address of the out interface. If the address is not explicitly set, the src must be specified.")
+    parser.add_argument('-s', '--segs', default="", help="segment list. (e.g. fd0a::,fd0b::,fd0c::)")
     parser.add_argument('-t', '--timeout', default=3, help="timeout")
-    parser.add_argument('-j', '--json_format', action='store_true')
+    parser.add_argument('-j', '--json_format', action='store_true', help="print json_format")
     parser.add_argument('-f', '--conf_file', help="config file")
 
-    parser.add_argument('--oam', type=bool, default=True, help="srh oam flag")
+    parser.add_argument('--oam', type=bool, default=True, help="SRH OAM flag")
     parser.add_argument('--hlim', type=int, default=64, help="IPv6 hop limit")
-    parser.add_argument('--including_srh', type=bool, default=True, help="always including_srh")
+    parser.add_argument('--including_srh', type=bool, default=True, help="always include SRH in packets")
     parser.add_argument('--iface', type=str, default=None, help="out interface")
 
     parser.add_argument('-v', '--verbose', action='store_true')
@@ -33,23 +35,18 @@ def run_from_yaml(yaml_file):
     with open(yaml_file) as f:
         conf = yaml.safe_load(f)
     ping_conf = conf.get("ping", [])
-    for dest in ping_conf:
-        srh_tlvs = []
-        for tlv in dest.get("srh_tlvs", []):
-            srh_tlvs.append(new_srh_tlv(type=tlv["type"], value=tlv["value"]))
-        pkt_params = {
-            "dst": dest["destination"],
-            "segs": dest.get("segs"),
-            "hlim": dest.get("hlim", 64),
-            "srh_tlvs": srh_tlvs
-        }
-        ping_and_show(timeout=dest.get("timeout", 3), max_count=dest.get("count", 1),
-                      json_format=dest.get("json_format", False), pkt_params=pkt_params)
+    for dst_d in ping_conf:
+        pkt_params = parse_pktparam_from_conf(dst_d)
+        
+        ping_and_show(timeout=dst_d.get("timeout", 3), max_count=dst_d.get("count", 1), json_format=dst_d.get("json_format", False), pkt_params=pkt_params)
 
 
 if __name__ == '__main__':
     args = get_args()
     srv6_ping.verbose = args.verbose
+    if srv6_ping.verbose:
+        logging.getLogger("scapy").setLevel(logging.DEBUG)
+
     if args.conf_file:
         run_from_yaml(args.conf_file)
     else:

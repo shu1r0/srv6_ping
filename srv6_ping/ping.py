@@ -7,16 +7,22 @@ from scapy.all import Packet, IPv6, ICMPv6EchoRequest, IPv6ExtHdrSegmentRouting,
 from scapy.layers.inet6 import ICMPv6EchoReply, ICMPv6DestUnreach, ICMPv6PacketTooBig, ICMPv6TimeExceeded, ICMPv6ParamProblem
 
 import srv6_ping
+from srv6_ping.route6 import add_target_routes6
+from srv6_ping.utils import get_dst
 
 
 def ping_and_show(timeout=3, max_count=-1, iface=None, json_format=False, pkt_params=None):
     pkt_params = pkt_params if pkt_params else dict()
+    pkt_params.setdefault("icmp_id", random.randint(0x0000, 0xffff))
+    
     verbose = 1 if srv6_ping.verbose else 0
     try:
+        # lookup and add destination route
+        add_target_routes6(pkt_params["dst"])
         count = 1
-        icmp_id = random.randint(0x0000, 0xffff)
         while (max_count < 0) or (count <= max_count):
-            result = ping1(timeout=timeout, verbose=verbose, return_pkt=False, iface=iface, icmp_id=icmp_id, icmp_seq=count, **pkt_params)
+            pkt_params["icmp_seq"] = count
+            result = ping1(timeout=timeout, verbose=verbose, return_pkt=False, iface=iface, pkt_params=pkt_params)
             if result:
                 if json_format:
                     result_format = {"result": result}
@@ -37,29 +43,32 @@ def ping_and_show(timeout=3, max_count=-1, iface=None, json_format=False, pkt_pa
             print("end.")
 
 
-def traceroute_and_show(dst: str, segs: List[str] = None, timeout=2, max_count=30, srh_tlvs: List[IPv6ExtHdrSegmentRoutingTLV] = None, json_format=False, protocol="udp"):
+def traceroute_and_show(timeout=2, max_count=30, iface=None, json_format=False, pkt_params=None):
+    pkt_params = pkt_params if pkt_params else dict()
+    pkt_params.setdefault("icmp_id", random.randint(0x0000, 0xffff))
+    pkt_params.setdefault("protocol", "udp")
+    
+    verbose = 1 if srv6_ping.verbose else 0
     try:
+        # lookup and add destination route
+        add_target_routes6(pkt_params["dst"])
         count=1
-        before_src = ""
         while (count <= max_count):
-            packet = new_probe_packet(dst, segs, hlim=count, protocol=protocol)
+            pkt_params["icmp_seq"] = count
+            packet = new_probe_packet(**pkt_params)
             
-            if srh_tlvs and IPv6ExtHdrSegmentRouting in packet:
-                for tlv in srh_tlvs:
-                    packet[IPv6ExtHdrSegmentRouting].tlv_objects.append(tlv)
-            
-            result = _ping1(packet, timeout, verbose=0, return_pkt=False)
+            result = _ping1(packet, timeout, iface=iface, verbose=verbose, return_pkt=True)
             if result:
+                rep = result.pop("recv_pkt")
+                result.pop("sent_pkt")  # to parse json
                 if json_format:
                     result_format = {"count": count, "result": result}
                     print(json.dumps(result_format))
                 else:
-                    print("%d: from=%s rtt=%f" % \
-                          (count, result["recv_from"], result["rtt"]))
+                    print("%d: from=%s rtt=%f" % (count, result["recv_from"], result["rtt"]))
                 
-                if dst == packet[IPv6].src or before_src == packet[IPv6].src:
+                if get_dst(packet) == rep[IPv6].src:
                     break
-                before_src = packet[IPv6].src
             else:
                 if json_format:
                     result_format = {"count": count, "result": "timeout"}
@@ -73,14 +82,10 @@ def traceroute_and_show(dst: str, segs: List[str] = None, timeout=2, max_count=3
             print("end.")
 
 
-def ping1(timeout=3, verbose=0, srh_tlvs: List[IPv6ExtHdrSegmentRoutingTLV] = None, return_pkt=False, iface=None, **pkt_param) -> Optional[dict]:
-    packet = new_probe_packet(**pkt_param)
-    if srh_tlvs:
-        if IPv6ExtHdrSegmentRouting in packet:
-            for tlv in srh_tlvs:
-                packet[IPv6ExtHdrSegmentRouting].tlv_objects.append(tlv)
-        else:
-            raise ValueError()
+def ping1(timeout=3, verbose=0, return_pkt=False, iface=None, pkt_params=None, **pkt_kwargs) -> Optional[dict]:
+    pkt_params = pkt_params if pkt_params else dict()
+    pkt_params.update(pkt_kwargs)  # for compatibility
+    packet = new_probe_packet(**pkt_params)
     return _ping1(packet, timeout, verbose, return_pkt=return_pkt, iface=iface)
 
 
@@ -127,18 +132,20 @@ def _ping1(packet: Packet, timeout: int, verbose: int, return_pkt: bool, iface: 
         return None
 
 
-def new_probe_packet(dst: str, segs: List[str] = None, hlim=64, including_srh=True, protocol="icmp", data_len=32, oam=True, src=None, icmp_id=0, icmp_seq=1) -> Packet:
-    packet = None
 
+def new_probe_packet(dst: str, segs: List[str] = None, srh_tlvs: List[IPv6ExtHdrSegmentRoutingTLV] = None, hlim=64, including_srh=True, protocol="icmp", data_len=32, oam=True, src=None, icmp_id=0, icmp_seq=1) -> Packet:
+    assert not (protocol == "icmp" and data_len < 16), "data_len must be at least 16. The reason is that the data is used to determine the response of the packet."
+    
+    packet = None
     payload = None
     if protocol == "icmp":
         payload = ICMPv6EchoRequest(id=icmp_id, seq=icmp_seq, data=RandString(data_len))
     elif protocol == "udp":
         payload = UDP(dport=int(RandNum(33434, 33534)))/Raw(load=RandString(data_len))
     else:
-        raise ValueError()
+        raise ValueError("Protocol(%s) is not supported." % protocol)
 
-    # SRH
+    # Layer3
     if segs and len(segs) > 0 and segs[0] != "":
         s = segs[::-1]
         s.insert(0, dst)
@@ -148,16 +155,17 @@ def new_probe_packet(dst: str, segs: List[str] = None, hlim=64, including_srh=Tr
             packet = IPv6(dst=dst, hlim=hlim)/IPv6ExtHdrSegmentRouting(addresses=[dst])/payload
         else:
             packet = IPv6(dst=dst, hlim=hlim)/payload
+    
+    if srh_tlvs:
+        if IPv6ExtHdrSegmentRouting in packet:
+            for tlv in srh_tlvs:
+                packet[IPv6ExtHdrSegmentRouting].tlv_objects.append(tlv)
+        else:
+            raise ValueError()
 
     if oam and IPv6ExtHdrSegmentRouting in packet:
         packet[IPv6ExtHdrSegmentRouting].oam = 1
 
-    if src:
-        packet[IPv6].src = src
+    packet[IPv6].src = src
 
     return packet
-
-
-def new_srh_tlv(type, value) -> IPv6ExtHdrSegmentRoutingTLV:
-    length = len(value)
-    return IPv6ExtHdrSegmentRoutingTLV(type=type, len=length, value=value)

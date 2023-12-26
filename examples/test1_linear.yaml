@@ -1,5 +1,7 @@
 ping:
   - destination: "2001:db8:10::2"
+    including_srh: False
+    icmp_id: 0xbeaf
   - destination: "2001:db8:30::2"
     segs: ["2001:db8:10::2","2001:db8:20::2"]
     timeout: 5
@@ -14,7 +16,7 @@ traceroute:
     protocol: icmp
   - destination: "2001:db8:30::2"
     segs: ["2001:db8:10::2","2001:db8:20::2"]
-    protocl: tcp
+    protocl: udp
     json_format: true
     timeout: 1
     srh_tlvs:
